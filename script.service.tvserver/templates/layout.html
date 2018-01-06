@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% endblock %} - TVServer</title>
+    <link rel="stylesheet" href="{{ url_for('static',filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='css/datatables.min.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static',filename='css/custom.css') }}">
+    <script src="{{ url_for('static',filename='js/jquery-3.2.1.min.js') }}"></script>
+    <script src="{{ url_for('static',filename='js/tether.min.js') }}"></script>
+    <script src="{{ url_for('static',filename='js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static',filename='js/datatables.min.js') }}"></script>
+  </head>
+  <body>
+    <br><br>
+    <div class="container-fluid">
+        {% block body %}{% endblock %}
+    </div>
+    <br><br>
+    <footer class="footer">
+      <div class="container-fluid">
+        <p class="text-muted text-right"></p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,279 @@
+{% extends 'layout.html' %}
+{% block title %}Каналы{% endblock %}
+{% block body %}
+<div class="row">
+  <div class="col-3">
+    <table id="groups" class="table" cellspacing="0" width="100%">
+      <thead>
+        <tr>
+          <td></td>
+          <td width="200px">Название группы</td>
+          <td>S</td>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="col">
+    <table id="channels" class="table table-hover" cellspacing="0" width="100%">
+      <thead>
+        <tr>
+          <td width="25px"></td>
+          <td>Лого</td>
+          <td>Название канала</td>
+          <td>Группа</td>
+          <td width="200px"></td>
+        </tr>
+      </thead>
+      <tbody ></tbody>
+    </table>
+  </div>
+</div>
+<script type="text/javascript">
+
+  var active_group = 'ВСЕ КАНАЛЫ';
+  var groups_title = [];
+  var groups = $('#groups').DataTable({
+    data: [],
+    ordering: false,
+    bFilter: false,
+    bPaginate: false,
+    bInfo: false,
+    displayLength: 50,
+    columns: [
+      {'data': 'disabled', 'name': 'disabled', 'visible': true,
+       'render': function(data, type, row, meta) {
+         if (type === 'display') {
+           if (row.disabled < 0) { return ""; }
+           checked = ''
+           if (!row.disabled) { checked = 'checked="checked"'; }
+           data = '<input table="groups" onclick="group_toggle(this.name, this.checked)" '+
+                  'name="'+row.group_title+'" type="checkbox" '+checked+'>';
+         }
+         return data;
+       }},
+      {'data': 'group_title', 'name': 'group_title', 'visible': true,
+       'render': function(data, type, row, meta) {
+         if (type === 'display') {
+           btnclass = 'btn-secondary';
+           if (data == active_group) { btnclass = 'btn-success'; }
+           data = '<button type="button" class="btn '+btnclass+'" '+
+                  'style="position:relative;width:170px" '+
+                  'onclick="load_channels(this.name)" name="'+data+'">'+data+'</button>';
+         }
+         return data;
+       }},
+      {'data': 'cnt', 'name': 'cnt', 'visible': true},
+    ]
+  });
+
+  var channels = $('#channels').DataTable({
+    data: [],
+    displayLength: 50,
+    language: {
+      'infoEmpty': 'с _START_ по _END_ из _TOTAL_ строк',
+      'info': 'с _START_ по _END_ из _TOTAL_ строк',
+      'emptyTable': 'Нет данных',
+      'search': 'Поиск: ',
+      'paginate': {
+        'first':      "Первая",
+        "last":       "Последняя",
+        "next":       "Следующая",
+        "previous":   "Предыдущая"
+      }
+    },
+    columns: [
+      {'data': 'ch_disabled', 'name': 'ch_disabled', 'visible': true,
+       'render': function(data, type, row, meta) {
+         if (type === 'display') {
+           checked = ''
+           if (row.cnt != row.ch_disabled) { checked = 'checked="checked"'; }
+           data = '<input type="checkbox" table="channels" '+
+                  'style="top:3px;position:relative;width:20px;height:20px;" '+
+                  'onclick="channel_toggle(this.name, this.checked)" name="'+row.name+'" '+checked+'>';
+         }
+         return data;
+       }},
+      {'data': 'logo', 'name': 'logo', 'visible': true,
+      'render': function(data, type, row, meta) {
+        if (type === 'display') {
+          data = 'static/images/logos/'+encodeURIComponent(row.name)+'.png';
+          if (data) { data = '<img src="'+data+'" height="30" width="30">'; }
+        }
+        return data;
+       }},
+      {'data': 'name', 'name': 'name', 'visible': true,
+       'render': function(data, type, row, meta) {
+         if (type === 'display') {
+           data = '<input type="text" data="channel_title" class="form-control" '+
+                  'style="width:93%" name="'+row.name+'" value="'+row.name+'">';
+         }
+         return data;
+       }},
+      {'data': 'group_title', 'name': 'group_title', 'visible': true,
+       'render': function(data, type, row, meta) {
+         if (type === 'display') {
+           data = '<select data="group_title" class="form-control" '+
+                  'style="width:93%;height:14px;" name="'+row.group_title+'">';
+           groups_title.forEach(function(element, index, array) {
+             if (row.group_title == element.group_title) {
+               data = data + '<option selected>'+element.group_title+'</option>';
+             } else {
+               data = data + '<option>'+element.group_title+'</option>';
+             }
+           });
+           data = data + '</select>';
+         }
+         return data;
+      }},
+      {'data': null, 'name': 'buttons', 'visible': true, 'orderable': false,
+       'render': function(data, type, row, meta) {
+         if (type === 'display') {
+           let enabled = parseInt(row.cnt) - parseInt(row.ch_disabled);
+           data = '<button type="button" class="btn btn-outline-success" '+
+                  'style="position:relative;margin-right:5px;" '+
+                  'onclick="channel_save(this)" name="'+row.name+'">Сохранить</button>'+
+                  '<button type="button" class="btn btn-secondary" '+
+                  'style="position:relative;width:90px" '+
+                  'onclick="show_streams(this)" name="'+row.name+'">Потоки: '+enabled+'/'+row.cnt+'</button>';
+         }
+         return data;
+       }},
+    ]
+  });
+
+  function load_groups() {
+    groups_title = [];
+    $.ajax({
+      url: '{{ url_for('.api_groups_get') }}',
+      async: false,
+      dataType: 'json',
+      success:function(data) {
+        groups.clear().draw();
+        groups.rows.add(data.groups.get);
+        groups.columns.adjust().draw();
+        groups_title = data.groups.get;
+      },
+      error:function(xhr, status, error) { console.error(error); }
+    });
+  }
+
+  function load_channels(group) {
+    if (!group) { group = ''; }
+    if (group == 'ВСЕ КАНАЛЫ') { group = ''; }
+    $.ajax({
+      url: '{{ url_for('.api_channels_get') }}?group='+encodeURIComponent(group),
+      async: false,
+      dataType: 'json',
+      success:function(data) {
+        channels.order([2, 'asc']);
+        channels.clear().draw();
+        channels.rows.add(data.channels.get);
+        channels.columns.adjust().draw();
+      },
+      error:function(xhr, status, error) { console.error(error); }
+    });
+  }
+
+  function load_tables() {
+    load_groups();
+    load_channels();
+  }
+
+  function group_toggle(name, status) {
+    $.ajax({
+      url: '{{ url_for('.api_groups_disable') }}?name='+encodeURIComponent(name)+'&status='+status,
+      async: false,
+      dataType: 'json',
+      success:function(data) { },
+      error:function(xhr, status, error) { console.error(error); }
+    })
+  }
+
+  function channel_toggle(name, status) {
+    $.ajax({
+      url: '{{ url_for('.api_channels_disable') }}?name='+encodeURIComponent(name)+'&status='+status,
+      async: false,
+      dataType: 'json',
+      success:function(data) { },
+      error:function(xhr, status, error) { console.error(error); }
+    })
+  }
+
+  function channel_save(element) {
+    let tr = $(element).closest('tr');
+    let row = channels.row(tr);
+    let channel = tr.find("input[data='channel_title']");
+    let group = tr.find("select[data='group_title']");
+    $.ajax({
+      url: '{{ url_for('.api_channels_update') }}?'+
+          'ch_name='+encodeURIComponent(channel.attr('name'))+'&'+
+          'gr_name='+encodeURIComponent(group.attr('name'))+'&'+
+          'channel_title='+encodeURIComponent(channel.val())+'&'+
+          'group_title='+encodeURIComponent(group.val()),
+      async: false,
+      dataType: 'json',
+      success:function(data) {
+        channel.attr('name', channel.val());
+        channel.attr('value', channel.val());
+        channels.cell(row,'name:name').data(channel.val());
+        group.attr('name', group.val());
+        group.attr('value', group.val());
+      },
+      error:function(xhr, status, error) { console.error(error); }
+    });
+  }
+
+  function show_streams(element) {
+    let tr = $(element).closest('tr')
+    let row = channels.row(tr);
+    if (row.child.isShown()) {
+      row.child.hide();
+      tr.removeClass('shown');
+    } else {
+      row.child(format(row.data())).show();
+      tr.addClass('shown');
+    }
+  }
+
+  function format(d) {
+    var details = '<div style="overflow:auto;width:940px">'+
+                  '<table class="table table-hover" cellspacing="0" width="100%">'+
+                  '<thead><tr><td></td><td>Ресурс</td><td>Название</td><td>Линк</td></thead>';
+    $.ajax({
+      url: '{{ url_for('.api_channels_links') }}?name='+encodeURIComponent(d.name),
+      async: false,
+      dataType: 'json',
+      success:function(data) {
+        data.channels.links.forEach(function(element, index, array) {
+          checked = ''
+          if (!element.disabled) { checked = 'checked="checked"'; }
+          details += '<tr>'+
+                     '<td><input type="checkbox" style="top:3px;position:relative;" '+
+                          'onclick="link_toggle(this.name, this.checked)" name="'+element.hash+'" '+checked+'></td>'+
+                     '<td>'+element.resource+'</td>'+
+                     '<td>'+element.title+'</td>'+
+                     '<td>'+element.link+'</td>'+
+                     '</tr>';
+        });
+      },
+      error:function(xhr, status, error) { console.error(error); }
+    });
+    details += '</table></div>';
+    return details;
+  }
+
+  function link_toggle(hash, status) {
+    $.ajax({
+      url: '{{ url_for('.api_channels_disable_resource') }}?hash='+hash+'&status='+status,
+      async: false,
+      dataType: 'json',
+      success:function(data) { },
+      error:function(xhr, status, error) { console.error(error); }
+    })
+  }
+
+  load_tables();
+
+</script>
+{% endblock %}

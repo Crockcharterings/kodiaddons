@@ -14,7 +14,7 @@
 	</extension>
 </addon>
 
-<addon id="script.service.tvserver" name="TVServer" version="1.0.1" provider-name="R.Leschuk">
+<addon id="script.service.tvserver" name="TVServer" version="1.0.2" provider-name="R.Leschuk">
     <requires>
         <import addon="xbmc.python" version="2.7"/>
     </requires>
