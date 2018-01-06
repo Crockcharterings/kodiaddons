@@ -9,9 +9,7 @@ sys.path.insert(0, addon.getAddonInfo('path')+'/resources/lib/')
 
 from flask import (Flask, render_template, Response, redirect, url_for, request, jsonify, abort)
 from channels import Channels
-
-#version = ".".join(map(str, sys.version_info[:3]))
-#xbmcgui.Dialog().ok(addonname, addon.getAddonInfo('path'), __name__, version)
+from config import *
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)

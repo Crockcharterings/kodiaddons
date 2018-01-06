@@ -1,0 +1,16 @@
+html {
+  font-size: 11px;
+}
+td {
+  vertical-align: middle !important;
+  padding: .50rem !important;
+}
+td.center {
+  text-align: center;
+}
+th {
+  vertical-align: middle !important;
+}
+.custom {
+  width: 70px !important;
+}
