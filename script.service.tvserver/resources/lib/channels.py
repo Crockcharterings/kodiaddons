@@ -1,19 +1,22 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 import os, logging, json, codecs, urllib2, requests, ssl, imp, importlib, time, subprocess, re
-#from threading import Thread
+import xbmcaddon, xbmc
 from datetime import datetime, timedelta
 import sqlite3
-from config import *
+
 logger = logging.getLogger(__name__)
+addon = xbmcaddon.Addon()
+DB = os.path.join(addon.getAddonInfo('path'),'resources','database.db')
+
+#open = codecs.open
+#def u(x):
+#    return codecs.unicode_escape_decode(x)[0]
 
 class Channels(object):
     def __init__(self):
         object.__init__(self)
-        self.mychannels = dict()
-        self.host = TVSERVER_HOST
-        self.port = TVSERVER_PORT
-        self.ace_process = None
 
     def _request(self, url):
         try:
@@ -24,7 +27,7 @@ class Channels(object):
         except: pass
 
     def update_channels(self):
-        conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn = sqlite3.connect(DB)
         conn.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
         file, pathname, description = imp.find_module('modules')
         if file:
@@ -88,7 +91,7 @@ class Channels(object):
         conn.close()
 
     def update_channel(self, ch_name, gr_name, channel_title, group_title):
-        conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn = sqlite3.connect(DB)
         try:
         	conn.cursor().execute("""
         		update channels_names set name = ?
@@ -106,7 +109,7 @@ class Channels(object):
         conn.close()
 
     def get_groups(self):
-        conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn = sqlite3.connect(DB)
         conn.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
         groups = conn.cursor().execute("""
             select (select count(*) from channels_groups) as cnt,
@@ -123,7 +126,7 @@ class Channels(object):
         conn.close()
 
     def group_toggle(self, name, status):
-        conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn = sqlite3.connect(DB)
         try:
             conn.cursor().execute("""
                 update groups set disabled = ?
@@ -134,7 +137,7 @@ class Channels(object):
         conn.close()
 
     def link_toggle(self, hash_, status):
-        conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn = sqlite3.connect(DB)
         try:
             conn.cursor().execute("""
                 update channels_orig set disabled = ?
@@ -145,7 +148,7 @@ class Channels(object):
         conn.close()
 
     def get_channels(self, name=None, disabled=False, group=None):
-        conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn = sqlite3.connect(DB)
         conn.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
         channels = []
         if name:
@@ -173,11 +176,14 @@ class Channels(object):
         return channels
 
     def get_channel(self, name, hd_priority=0, p2p_priority=0,
-                          acestream_host=ACESTREAM_HOST, acestream_port=ACESTREAM_PORT):
+                          acestream_host=addon.getSetting('ace_host'), acestream_port=addon.getSetting('ace_port')):
         channels = self.get_channels(name)
+        addon = xbmcaddon.Addon()
         if channels:
             channels = self.order_channels(channels, hd_priority=hd_priority, p2p_priority=p2p_priority)
             for channel in channels:
+                logger.debug('%s == %s', channel['resource'], addon.getSetting(channel['resource']))
+                if addon.getSetting(channel['resource']) == 'false': continue
                 if channel['disabled'] == 1: continue
                 module = 'modules.'+channel['resource'][:-3]
                 url = importlib.import_module(module).TVResource().get_stream(channel)
@@ -189,9 +195,11 @@ class Channels(object):
                     logger.info('test %s: %s', url, test)
                     if test < 999: return url
             logger.error('%s: no working streams', name)
+            xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (addon.getAddonInfo('name'),
+                '%s: нет рабочих потоков' % (name.encode('utf8')), 1000, ''))
 
     def channel_toggle(self, name, status):
-        conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn = sqlite3.connect(DB)
         try:
             conn.cursor().execute("""
                 update channels_orig set disabled = ?, timestamp = ?
@@ -202,7 +210,7 @@ class Channels(object):
         conn.close()
 
     def get_playlist(self, hd_priority=0, p2p_priority=0,
-                           acestream_host=ACESTREAM_HOST, acestream_port=ACESTREAM_PORT):
+                           acestream_host=addon.getSetting('ace_host'), acestream_port=addon.getSetting('ace_port')):
         m3u = []
         m3u.append('#EXTM3U')
         for channel in self.get_channels():
@@ -215,14 +223,14 @@ class Channels(object):
             ]))
             url = [
                 'http://{host}:{port}/channel?name={name}&hd={hd}&p2p={p2p}'.format(
-                    host=self.host,
-                    port=self.port,
+                    host=addon.getSetting('host'),
+                    port=addon.getSetting('port'),
                     name=urllib2.quote(channel.get('name').encode('utf8')),
                     hd=hd_priority,
                     p2p=p2p_priority
                 )]
-            if acestream_host != ACESTREAM_HOST: url.append('acestream_host='+acestream_host)
-            if acestream_port != ACESTREAM_PORT: url.append('acestream_port='+acestream_port)
+            if acestream_host != addon.getSetting('ace_host'): url.append('acestream_host='+acestream_host)
+            if acestream_port != addon.getSetting('ace_port'): url.append('acestream_port='+acestream_port)
             m3u.append('&'.join(url))
         return '\n'.join(m3u)
 
@@ -275,11 +283,11 @@ class Channels(object):
 
     def get_logo(self, channel):
         try:
-            m = [f.decode('utf8') for f in os.listdir(GLOBAL_PATH + '/static/images/logos/')]
+            m = [f.encode('utf8') for f in os.listdir(os.path.join(GLOBAL_PATH,'static','images','logos'))]
             f = m[m.index(channel['name']+'.png')]
             return 'http://{host}:{port}/static/images/logos/{name}'.format(
-                host=self.host,
-                port=self.port,
+                host=addon.getSetting('host'),
+                port=addon.getSetting('port'),
                 name=urllib2.quote(f)
             )
         except:

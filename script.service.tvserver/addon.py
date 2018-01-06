@@ -5,15 +5,23 @@ import os, sys, json, logging
 
 addon = xbmcaddon.Addon()
 addonname = addon.getAddonInfo('name')
-sys.path.insert(0, addon.getAddonInfo('path')+'/resources/lib/')
+sys.path.insert(0, os.path.join(addon.getAddonInfo('path'),'resources','lib'))
 
 from flask import (Flask, render_template, Response, redirect, url_for, request, jsonify, abort)
 from channels import Channels
-from config import *
 
+logging.basicConfig(
+    format     = addon.getSetting('log_format'),
+    level      = addon.getSetting('log_level'),
+    filename   = os.path.join(addon.getAddonInfo('path'), 'addon.log')
+)
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
 chls = Channels()
+
+def jsonloads(value):
+    try: return json.loads(value)
+    except: return value
 
 @app.route('/')
 def home():
@@ -83,10 +91,10 @@ def api_channels_update():
 
 @app.route('/playlist')
 def playlist():
-    ace_host = request.args.get('acestream_host',ACESTREAM_HOST)
-    ace_port = request.args.get('acestream_port',ACESTREAM_PORT)
-    hd_priority = request.args.get('hd_priority',0)
-    p2p_priority = request.args.get('p2p_priority',0)
+    ace_host = request.args.get('acestream_host',addon.getSetting('ace_host'))
+    ace_port = request.args.get('acestream_port',addon.getSetting('ace_port'))
+    hd_priority = request.args.get('hd',int(jsonloads(addon.getSetting('hd'))))
+    p2p_priority = request.args.get('p2p',int(jsonloads(addon.getSetting('p2p'))))
     m3u = chls.get_playlist(
         hd_priority=hd_priority,
         p2p_priority=p2p_priority,
@@ -98,10 +106,10 @@ def playlist():
 @app.route('/channel')
 def channel():
     name = request.args.get('name')
-    ace_host = request.args.get('acestream_host',ACESTREAM_HOST)
-    ace_port = request.args.get('acestream_port',ACESTREAM_PORT)
-    hd_priority = request.args.get('hd_priority',0)
-    p2p_priority = request.args.get('p2p_priority',1)
+    ace_host = request.args.get('acestream_host',addon.getSetting('ace_host'))
+    ace_port = request.args.get('acestream_port',addon.getSetting('ace_port'))
+    hd_priority = request.args.get('hd',int(jsonloads(addon.getSetting('hd'))))
+    p2p_priority = request.args.get('p2p',int(jsonloads(addon.getSetting('p2p'))))
     channel_link = chls.get_channel(name,
         hd_priority=hd_priority,
         p2p_priority=p2p_priority,
@@ -112,5 +120,5 @@ def channel():
     return abort(403)
 
 if __name__ == '__main__':
-    xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (addonname, 'TVServer started', 5000, ''))
-    app.run(host='0.0.0.0', debug=False, threaded=True, port=8081)
+    xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (addonname, 'started', 5000, ''))
+    app.run(host='0.0.0.0', debug=False, threaded=True, port=int(addon.getSetting('port')))

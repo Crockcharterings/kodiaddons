@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <category label="Основные">
+    <setting id="host" type="text" label="IP адрес сервера" default="127.0.0.1"/>
+    <setting id="port" type="text" label="Порт сервера" default="8081"/>
+    <setting id="hd" type="bool" label="Предпочитать HD потоки" default="false"/>
+    <setting id="p2p" type="bool" label="Предпочитать P2P потоки" default="true"/>
+    <setting id="ace_host" type="text" label="ACEStream сервер" default="127.0.0.1"/>
+    <setting id="ace_port" type="text" label="ACEStream порт" default="6878"/>
+    <setting id="log_level" type="labelenum" label="Уровень логирования" default="INFO" values="INFO|DEBUG"/>
+    <setting id="log_format" type="text" label="Формат логирования" default="%(asctime)s - %(levelname)s - %(message)s"/>
+  </category>
+  <category label="Ресурсы">
+    <setting id="trashtv.py" type="bool"       label="#1   Trash.tv  (P2P SID)" default="true"/>
+    <setting id="oneliketv.py" type="bool"     label="#2   Onelike.tv (HTTP)" default="true"/>
+    <setting id="torrenttv.py" type="bool"     label="#3   Torrent-tv.ru (P2P AceLive)" default="false"/>
+    <setting id="asplaylist.py" type="bool"    label="#4   ASplaylist.net (P2P AceLive)" default="false"/>
+    <setting id="oktv.py" type="bool"          label="#5   Ok-tv.org (HTTP)" default="false"/>
+    <setting id="tvtorrent.py" type="bool"     label="#6   TV-torrent.info (P2P SID)" default="false"/>
+    <setting id="glaz.py" type="bool"          label="#7   Glaz.tv (HTTP)" default="false"/>
+    <setting id="alltvonline.py" type="bool"   label="#9   AlltvOnline.ru (HTTP)" default="false"/>
+    <setting id="allfontv.py" type="bool"      label="#10  Allfon-tv.pro (P2P AceLive)" default="false"/>
+    <setting id="onlytv.py" type="bool"        label="#11  Оnly-tv.org (HTTP)" default="false"/>
+    <setting id="tvonly.py" type="bool"        label="#13  TV-only.org (HTTP)" default="false"/>
+    <setting id="torrentstream.py" type="bool" label="#14  Torren-Stream.ru (P2P AceLive)" default="false"/>
+    <setting id="yandex.py" type="bool"        label="#15  Яндекс ТВ (HTTP)" default="false"/>
+    <setting id="fanattv.py" type="bool"       label="#18  Fanat.tv (HTTP)" default="false"/>
+  </category>
+</settings>
