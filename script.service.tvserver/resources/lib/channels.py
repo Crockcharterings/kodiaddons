@@ -3,7 +3,6 @@
 import os, logging, json, codecs, urllib2, requests, ssl, imp, importlib, time, subprocess, re
 #from threading import Thread
 from datetime import datetime, timedelta
-#import pandas as pd
 import sqlite3
 from config import *
 logger = logging.getLogger(__name__)
@@ -26,6 +25,7 @@ class Channels(object):
 
     def update_channels(self):
         conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
+        conn.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
         file, pathname, description = imp.find_module('modules')
         if file:
             logger.critical('Not a package: modules')
@@ -38,9 +38,9 @@ class Channels(object):
                     resource = mod.TVResource()
                     channels = resource.get_channels()
                     resource_hash = abs(hash(resource.urlparse.netloc))
-                    channels_db = pd.read_sql_query("""
+                    channels_db = conn.cursor().execute("""
                         select * from channels_orig
-                        where resource_hash = {0}""".format(resource_hash), conn)
+                        where resource_hash = {0}""".format(resource_hash)).fetchall()
                     for channel in channels:
                         item = channels_db.loc[channels_db['hash'] == channel['hash']]
                         if not item.empty:
@@ -107,7 +107,8 @@ class Channels(object):
 
     def get_groups(self):
         conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
-        groups = pd.read_sql_query("""
+        conn.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
+        groups = conn.cursor().execute("""
             select (select count(*) from channels_groups) as cnt,
             -1 as disabled, 'ВСЕ КАНАЛЫ' as group_title
             union all
@@ -117,7 +118,7 @@ class Channels(object):
             from groups g
             left join channels_groups cg on g.title = cg.group_title
             group by g.title order by g.title)
-            """, conn).fillna('').to_dict(orient='record')
+            """).fetchall()
         return groups
         conn.close()
 
@@ -145,28 +146,29 @@ class Channels(object):
 
     def get_channels(self, name=None, disabled=False, group=None):
         conn = sqlite3.connect(GLOBAL_PATH + '/database.db')
-        channels = dict()
+        conn.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
+        channels = []
         if name:
-            channels_db = pd.read_sql_query("""
+            channels_db = conn.cursor().execute("""
                 select co.*, cn.name from channels_orig co
                 inner join channels_names cn on co.hash = cn.channel_hash
                 inner join resources r on co.resource = r.resource and r.disabled = 0
                 where cn.name = '{0}'
                 order by cn.name, cost
-                """.format(name.encode('utf8').replace("'","''")), conn).fillna('')
+                """.format(name.encode('utf8').replace("'","''"))).fetchall()
         elif disabled:
             group_filter = ""
             if group: group_filter = "where group_title = '{}'".format(group.encode('utf8'))
-            channels_db = pd.read_sql_query("""
+            channels_db = conn.cursor().execute("""
                 select * from channels {}
-                """.format(group_filter), conn).fillna('')
+                """.format(group_filter)).fetchall()
         else:
-            channels_db = pd.read_sql_query("""
+            channels_db = conn.cursor().execute("""
                 select * from channels
                 where gr_disabled = 0
                 and ch_disabled <> cnt
-                """, conn).fillna('')
-        channels = channels_db.to_dict(orient='record')
+                """).fetchall()
+        channels = channels_db
         conn.close()
         return channels
 
