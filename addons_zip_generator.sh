@@ -3,13 +3,13 @@
 SCRIPT_PATH=`dirname $0`
 cd $SCRIPT_PATH
 
-for f in ./* ; do
+for f in ./*; do
   if [ -d "$f" ]; then
-    version=`cat $f/addon.xml | grep "addon id" | awk '{match($0,"version=\"(.*?)\" ",a)}END{print a[1]}'`
-    addon_name=`basename $f`
-    echo "Plugin found: $addon_name/$addon_name-$version"
-    rm -f "$addon_name/$addon_name-$version.zip"
-    zip -r "$addon_name/$addon_name-$version.zip" "$addon_name" -x "*.zip"
+    VERSION=`cat $f/addon.xml | grep "addon id" | awk '{match($0,"version=\"(.*?)\" ",a)}END{print a[1]}'`
+    ADDON_NAME=`basename $f`
+    echo "Plugin found: $ADDON_NAME/$ADDON_NAME-$VERSION"
+    rm -f "$ADDON_NAME/$ADDON_NAME-$VERSION.zip"
+    zip -r "$ADDON_NAME/$ADDON_NAME-$VERSION.zip" "$ADDON_NAME" -x "*.zip*"
   fi
 done
 

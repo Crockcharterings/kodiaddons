@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes'?>
 <addons>
-<addon id="repository.rleschuk" name="R.Leschuk Kodi Add-ons" version="1.0" provider-name="R.Leschuk">
+<addon id="repository.rleschuk" name="R.Leschuk Kodi Add-ons" version="1.0.1" provider-name="R.Leschuk">
 	<extension point="xbmc.addon.repository" name="R.Leschuk Kodi Add-ons">
 		<info compressed="false">https://github.com/rleschuk/kodiaddons/raw/master/addons.xml</info>
 		<checksum>https://github.com/rleschuk/kodiaddons/raw/master/addons.xml.md5</checksum>
@@ -14,7 +14,7 @@
 	</extension>
 </addon>
 
-<addon id="script.service.tvserver" name="TVServer" version="1.0" provider-name="rleschuk">
+<addon id="script.service.tvserver" name="TVServer" version="1.0.1" provider-name="R.Leschuk">
     <requires>
         <import addon="xbmc.python" version="2.7"/>
     </requires>
