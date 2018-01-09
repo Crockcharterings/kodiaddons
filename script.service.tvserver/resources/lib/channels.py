@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import os, logging, json, codecs, urllib2, requests, ssl, imp, importlib, time, subprocess, re
+import os, logging, json, codecs, urllib2, requests, ssl, imp, importlib, time, re
 import xbmcaddon, xbmc
 from datetime import datetime, timedelta
 import sqlite3
@@ -136,6 +136,17 @@ class Channels(object):
         except: pass
         conn.close()
 
+    def channel_toggle(self, name, status):
+        conn = sqlite3.connect(DB)
+        try:
+            conn.cursor().execute("""
+                update channels_orig set disabled = ?, timestamp = ?
+                where hash in (select channel_hash from channels_names where name = ?)""",
+                (int(not status), int(time.time()-time.mktime(time.gmtime(0))), name))
+            conn.commit()
+        except: pass
+        conn.close()
+
     def link_toggle(self, hash_, status):
         conn = sqlite3.connect(DB)
         try:
@@ -175,42 +186,37 @@ class Channels(object):
         conn.close()
         return channels
 
-    def get_channel(self, name, hd_priority=0, p2p_priority=0,
-                          acestream_host=addon.getSetting('ace_host'), acestream_port=addon.getSetting('ace_port')):
-        channels = self.get_channels(name)
+    def get_channel(self, name, hd=0, p2p=0, ace_host=None, ace_port=None):
         addon = xbmcaddon.Addon()
+        if not ace_host: ace_host = addon.getSetting('ace_host')
+        if not ace_port: ace_port = addon.getSetting('ace_port')
+        channels = self.get_channels(name)
         if channels:
-            channels = self.order_channels(channels, hd_priority=hd_priority, p2p_priority=p2p_priority)
+            channels = self.order_channels(channels, hd=hd, p2p=p2p)
             for channel in channels:
                 logger.debug('%s == %s', channel['resource'], addon.getSetting(channel['resource']))
                 if addon.getSetting(channel['resource']) == 'false': continue
                 if channel['disabled'] == 1: continue
                 module = 'modules.'+channel['resource'][:-3]
-                url = importlib.import_module(module).TVResource().get_stream(channel)
+                try:
+                    url = importlib.import_module(module).TVResource().get_stream(channel)
+                except Exception as e:
+                    logger.error(repr(e))
+                    continue
                 if url:
                     if url.startswith('/ace/'):
-                        url = ''.join(['http://', acestream_host, ':', acestream_port, url])
-                    logger.info('get_stream: %s', url)
-                    test = self.test_channel(url, acestream_host, acestream_port)
+                        url = ''.join(['http://', ace_host, ':', ace_port, url])
+                    logger.debug('get_stream: %s', url)
+                    test = self.test_channel(url, ace_host, ace_port)
                     logger.info('test %s: %s', url, test)
                     if test < 999: return url
             logger.error('%s: no working streams', name)
-            xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (addon.getAddonInfo('name'),
-                '%s: нет рабочих потоков' % (name.encode('utf8')), 1000, ''))
+            xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (name.encode('utf8'), 'нет рабочих потоков', 1000, ''))
 
-    def channel_toggle(self, name, status):
-        conn = sqlite3.connect(DB)
-        try:
-            conn.cursor().execute("""
-                update channels_orig set disabled = ?, timestamp = ?
-                where hash in (select channel_hash from channels_names where name = ?)""",
-                (int(not status), int(time.time()-time.mktime(time.gmtime(0))), name))
-            conn.commit()
-        except: pass
-        conn.close()
-
-    def get_playlist(self, hd_priority=0, p2p_priority=0,
-                           acestream_host=addon.getSetting('ace_host'), acestream_port=addon.getSetting('ace_port')):
+    def get_playlist(self, hd=0, p2p=0, ace_host=None, ace_port=None):
+        addon = xbmcaddon.Addon()
+        if not ace_host: ace_host = addon.getSetting('ace_host')
+        if not ace_port: ace_port = addon.getSetting('ace_port')
         m3u = []
         m3u.append('#EXTM3U')
         for channel in self.get_channels():
@@ -226,41 +232,41 @@ class Channels(object):
                     host=addon.getSetting('host'),
                     port=addon.getSetting('port'),
                     name=urllib2.quote(channel.get('name').encode('utf8')),
-                    hd=hd_priority,
-                    p2p=p2p_priority
+                    hd=hd,
+                    p2p=p2p
                 )]
-            if acestream_host != addon.getSetting('ace_host'): url.append('acestream_host='+acestream_host)
-            if acestream_port != addon.getSetting('ace_port'): url.append('acestream_port='+acestream_port)
+            if ace_host != addon.getSetting('ace_host'): url.append('ace_host='+ace_host)
+            if ace_port != addon.getSetting('ace_port'): url.append('ace_port='+ace_port)
             m3u.append('&'.join(url))
         return '\n'.join(m3u)
 
-    def order_channels(self, channels, hd_priority=0, p2p_priority=0):
+    def order_channels(self, channels, hd=0, p2p=0):
         tmp = channels
         result = []
-        if hd_priority:
+        if hd:
             result.extend([c for c in tmp if re.search('HD', c['title'])])
-            result.extend([c for c in tmp if not re.search('HD', c['title'])])
+            result.extend([c for c in tmp if not re.search('HD', c['title']) and c not in result])
         else:
             result.extend([c for c in tmp if not re.search('HD', c['title'])])
-            result.extend([c for c in tmp if re.search('HD', c['title'])])
+            result.extend([c for c in tmp if re.search('HD', c['title']) and c not in result])
         tmp = result
         result = []
-        if p2p_priority:
-            result.extend([c for c in tmp if re.search('(^/ace/|acestream)', c['link'])])
-            result.extend([c for c in tmp if not re.search('(^/ace/|acestream)', c['link'])])
+        if p2p:
+            result.extend([c for c in tmp if re.search('(^/ace/|acestream)', c['link']) and c not in result])
+            result.extend([c for c in tmp if not re.search('(^/ace/|acestream)', c['link']) and c not in result])
         else:
-            result.extend([c for c in tmp if not re.search('(^/ace/|acestream)', c['link'])])
-            result.extend([c for c in tmp if re.search('(^/ace/|acestream)', c['link'])])
+            result.extend([c for c in tmp if not re.search('(^/ace/|acestream)', c['link']) and c not in result])
+            result.extend([c for c in tmp if re.search('(^/ace/|acestream)', c['link']) and c not in result])
         return result
 
-    def test_channel(self, url, acestream_host, acestream_port):
+    def test_channel(self, url, ace_host, ace_port):
         try:
             s = requests.session()
             d = datetime.now()
             if '/ace/' in url:
                 url = url.replace('ace/getstream', 'ace/manifest.m3u8')
                 link = ''.join([
-                    'http://', acestream_host, ':', acestream_port,
+                    'http://', ace_host, ':', ace_port,
                     '/webui/api/service?method=get_version&format=jsonp&callback=mycallback'
                 ])
                 result = self._request(link)
@@ -283,7 +289,8 @@ class Channels(object):
 
     def get_logo(self, channel):
         try:
-            m = [f.encode('utf8') for f in os.listdir(os.path.join(GLOBAL_PATH,'static','images','logos'))]
+            ldig = os.path.join(addon.getAddonInfo('path'),'static','images','logos')
+            m = [f.encode('utf8') for f in os.listdir(ldir)]
             f = m[m.index(channel['name']+'.png')]
             return 'http://{host}:{port}/static/images/logos/{name}'.format(
                 host=addon.getSetting('host'),

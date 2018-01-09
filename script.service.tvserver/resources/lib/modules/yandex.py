@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from modules import TVResourceTemplate, research
-from bs4 import BeautifulSoup
-import re, logging, urllib2
+import re, logging
 logger = logging.getLogger(__name__)
 
 class TVResource(TVResourceTemplate):
     baseurl = 'https://www.yandex.ru/portal/tvstream_json/channels?locale=ru&from=morda'
     def __init__(self, baseurl=baseurl):
         super(TVResource, self).__init__(baseurl)
-        self.cost = 999
+        self.cost = 15
 
     def _get_channels(self):
         channels = []
@@ -19,16 +18,19 @@ class TVResource(TVResourceTemplate):
             try:
                 if t.get('logo'): logo = 'http:'+t.get('logo')
                 else: logo = ''
+                title = t.get('title')
+                link = t.get('content_url')
                 channels.append(dict(
-                    title=unicode(t.get('title')),
-                    link=unicode(t.get('content_url')),
+                    title=unicode(title),
+                    link=unicode(link),
                     logo=unicode(logo)
                 ))
+                logger.info('get channel %s', link)
             except Exception as e:
                 logger.error('%s:%s - %s', self.baseurl, index, repr(e)[:50])
         return channels
 
     def _get_stream(self, channel):
-        data = self._get_channels()
-        index = [d['title'] for d in data].index(channel['title'])
+        data = self.get_json(self.baseurl)
+        index = [d['title'] for d in data.get('set',[])].index(channel['title'])
         return data[index]['link']

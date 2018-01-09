@@ -34,7 +34,7 @@ def api_groups_get():
 
 @app.route('/api/groups/disable')
 def api_groups_disable():
-    name   = request.args.get('name')
+    name = request.args.get('name')
     status = jsonloads(request.args.get('status'))
     if name and isinstance(status, bool):
         chls.group_toggle(name, status)
@@ -44,7 +44,7 @@ def api_groups_disable():
 
 @app.route('/api/channels/get')
 def api_channels_get():
-    group    = request.args.get('group')
+    group = request.args.get('group')
     channels = chls.get_channels(disabled=True, group=group)
     return jsonify(channels=dict(get=channels))
 
@@ -58,7 +58,7 @@ def api_channels_links():
 
 @app.route('/api/channels/disable')
 def api_channels_disable():
-    name   = request.args.get('name')
+    name = request.args.get('name')
     status = jsonloads(request.args.get('status'))
     if name and isinstance(status, bool):
         chls.channel_toggle(name, status)
@@ -68,7 +68,7 @@ def api_channels_disable():
 
 @app.route('/api/channels/disable_resource')
 def api_channels_disable_resource():
-    hash_  = request.args.get('hash')
+    hash_ = request.args.get('hash')
     status = jsonloads(request.args.get('status'))
     if hash_ and isinstance(status, bool):
         chls.link_toggle(hash_, status)
@@ -91,34 +91,28 @@ def api_channels_update():
 
 @app.route('/playlist')
 def playlist():
-    ace_host = request.args.get('acestream_host',addon.getSetting('ace_host'))
-    ace_port = request.args.get('acestream_port',addon.getSetting('ace_port'))
-    hd_priority = request.args.get('hd',int(jsonloads(addon.getSetting('hd'))))
-    p2p_priority = request.args.get('p2p',int(jsonloads(addon.getSetting('p2p'))))
+    ace_host = request.args.get('ace_host',addon.getSetting('ace_host'))
+    ace_port = request.args.get('ace_port',addon.getSetting('ace_port'))
+    hd = request.args.get('hd',int(jsonloads(addon.getSetting('hd'))))
+    p2p = request.args.get('p2p',int(jsonloads(addon.getSetting('p2p'))))
     m3u = chls.get_playlist(
-        hd_priority=hd_priority,
-        p2p_priority=p2p_priority,
-        acestream_host=ace_host,
-        acestream_port=ace_port
-    )
+        hd=hd, p2p=p2p,
+        ace_host=ace_host, ace_port=ace_port)
     return Response(m3u, status=200, mimetype='text/plain')
 
 @app.route('/channel')
 def channel():
     name = request.args.get('name')
-    ace_host = request.args.get('acestream_host',addon.getSetting('ace_host'))
-    ace_port = request.args.get('acestream_port',addon.getSetting('ace_port'))
-    hd_priority = request.args.get('hd',int(jsonloads(addon.getSetting('hd'))))
-    p2p_priority = request.args.get('p2p',int(jsonloads(addon.getSetting('p2p'))))
+    ace_host = request.args.get('ace_host',addon.getSetting('ace_host'))
+    ace_port = request.args.get('ace_port',addon.getSetting('ace_port'))
+    hd = request.args.get('hd',int(jsonloads(addon.getSetting('hd'))))
+    p2p = request.args.get('p2p',int(jsonloads(addon.getSetting('p2p'))))
     channel_link = chls.get_channel(name,
-        hd_priority=hd_priority,
-        p2p_priority=p2p_priority,
-        acestream_host=ace_host,
-        acestream_port=ace_port
-    )
+        hd=hd, p2p=p2p,
+        ace_host=ace_host, ace_port=ace_port)
     if channel_link: return redirect(channel_link)
     return abort(403)
 
 if __name__ == '__main__':
-    xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (addonname, 'started', 5000, ''))
+    xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (addonname, 'запустился', 5000, ''))
     app.run(host='0.0.0.0', debug=False, threaded=True, port=int(addon.getSetting('port')))

@@ -97,7 +97,7 @@
       {'data': 'logo', 'name': 'logo', 'visible': true,
       'render': function(data, type, row, meta) {
         if (type === 'display') {
-          data = 'static/images/logos/'+encodeURIComponent(row.name)+'.png';
+          //data = 'static/images/logos/'+encodeURIComponent(row.name)+'.png';
           if (data) { data = '<img src="'+data+'" height="30" width="30">'; }
         }
         return data;
@@ -248,12 +248,14 @@
         data.channels.links.forEach(function(element, index, array) {
           checked = ''
           if (!element.disabled) { checked = 'checked="checked"'; }
+          let ends = '';
+          if (element.link.length > 80) { ends = '...'; }
           details += '<tr>'+
                      '<td><input type="checkbox" style="top:3px;position:relative;" '+
                           'onclick="link_toggle(this.name, this.checked)" name="'+element.hash+'" '+checked+'></td>'+
                      '<td>'+element.resource+'</td>'+
                      '<td>'+element.title+'</td>'+
-                     '<td>'+element.link+'</td>'+
+                     '<td>'+element.link.slice(0,80)+ends+'</td>'+
                      '</tr>';
         });
       },

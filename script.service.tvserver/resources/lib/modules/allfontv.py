@@ -6,33 +6,30 @@ import re, logging
 logger = logging.getLogger(__name__)
 
 class TVResource(TVResourceTemplate):
-    baseurl = 'http://ok-tv.org'
+    baseurl = 'http://allfon-tv.com'
     def __init__(self, baseurl=baseurl):
         super(TVResource, self).__init__(baseurl)
-        self.cost = 5
+        self.cost = 10
 
     def _get_channels(self):
         channels = []
         soup = self.get_soup(self.baseurl)
-        for index, a in enumerate(soup.findAll('a', {'class':'bt-image-link'})):
+        for index, l in enumerate(soup.findAll('figure', {'class':'img'})):
             try:
-                title = re.sub(u'(С|с)мотреть\s+онлайн.*$',u'',a.get('title'),flags=re.I).strip()
-                logo = self.baseurl + a.find('img').get('src')
-                soup = self.get_soup(self.baseurl + a.get('href'))
-                link = soup.find('iframe').get('src')
+                title = l.find('figcaption').string.strip()
+                link = self.baseurl + l.find('a').get('href')
+                logo = self.baseurl + l.find('img').get('src')
                 channels.append(dict(
                     title=unicode(title),
                     link=unicode(link),
                     logo=unicode(logo)
                 ))
-                logger.info('get channel %s', self.baseurl + a.get('href'))
-            except AttributeError:
-                pass
+                logger.info('get channel %s', link)
             except Exception as e:
                 logger.error('%s:%s - %s', self.baseurl, index, repr(e)[:50])
         return channels
 
     def _get_stream(self, channel):
         html = self.get_url(channel['link'])
-        stream = research("file: '(.*?)'",html.decode('utf8'))
-        return stream
+        stream = research("acestream://(.*?)\"",html.decode('utf8'))
+        return '/ace/getstream?id=' + stream

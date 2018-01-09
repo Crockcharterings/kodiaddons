@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from modules import TVResourceTemplate, research
-from bs4 import BeautifulSoup
 import re, logging
 logger = logging.getLogger(__name__)
 
@@ -11,26 +10,26 @@ class TVResource(TVResourceTemplate):
     def __init__(self, baseurl=baseurl):
         super(TVResource, self).__init__(baseurl)
         self.channel_groups = None
-        self.cost = 888
+        self.cost = 2
 
     def _get_channels(self):
         channels = []
         soup = self.get_soup(self.baseurl)
-        for index, l in enumerate(soup.find_all('a',target='_blank',href=re.compile('\/\S+\.html'))):
+        for index, l in enumerate(soup.findAll('a',{'target':'_blank','href':re.compile('\/\S+\.html')})):
             try:
                 soup = self.get_soup(self.baseurl + l.get('href'))
-                channel_title = research(u'^(.*?) смотреть онлайн',soup.title.string)
-                channel_logo = self.baseurl + soup.find('img', title=channel_title).get('src')
-                channel_link = soup.find('iframe').get('src')
-                group_title = self.get_channel_group(l.get('href'))
-                if channel_link:
+                title = research(u'^(.*?) смотреть онлайн',soup.title.string)
+                logo = self.baseurl + soup.find('img', title=title).get('src')
+                link = soup.find('iframe').get('src')
+                group = self.get_channel_group(l.get('href'))
+                if link:
                     channels.append(dict(
-                        title=unicode(channel_title),
-                        link=unicode(channel_link),
-                        logo=unicode(channel_logo),
-                        group=unicode(group_title)
+                        title=unicode(title),
+                        link=unicode(link),
+                        logo=unicode(logo),
+                        group=unicode(group)
                     ))
-                logger.debug('get channel %s', self.baseurl + l.get('href'))
+                logger.info('get channel %s', self.baseurl + l.get('href'))
             except AttributeError:
                 pass
             except Exception as e:

@@ -2,34 +2,36 @@
 # -*- coding: utf-8 -*-
 
 from modules import TVResourceTemplate, research
-from bs4 import BeautifulSoup
-import re, logging
+import re, logging, json
 logger = logging.getLogger(__name__)
 
 class TVResource(TVResourceTemplate):
     baseurl = 'http://pomoyka.lib.emergate.net/trash/ttv-list/ttv.json'
     def __init__(self, baseurl=baseurl):
         super(TVResource, self).__init__(baseurl)
-        self.cost = 101
+        self.cost = 1
 
     def _get_channels(self):
         channels = []
-        data = eval(self.get_url(self.baseurl))
+        data = self.get_url(self.baseurl).replace('\n','').strip().decode("utf-8-sig")
+        data = json.loads(data)
         for index, l in enumerate(data['channels']):
             try:
-                channel_title = l['name'].decode('utf8')
-                channel_link = ''.join(['/ace/getstream?id=',l['url'],'&.mp4'])
-                group_title = l['cat'].decode('utf8')
+                title = l['name']
+                link = ''.join(['/ace/getstream?id=',l['url'],'&.mp4'])
+                group = l['cat']
                 channels.append(dict(
-                    title=unicode(channel_title),
-                    link=unicode(channel_link),
-                    group=unicode(group_title)
+                    title=unicode(title),
+                    link=unicode(link),
+                    group=unicode(group)
                 ))
+                logger.info('get channel %s', link)
             except Exception as e:
                 logger.error('%s:%s - %s', self.baseurl, index, repr(e)[:50])
         return channels
 
     def _get_stream(self, channel):
-        data = eval(self.get_url(self.baseurl))['channels']
-        index = [d['name'].decode('utf8') for d in data].index(channel['title'])
+        data = self.get_url(self.baseurl).replace('\n','').strip().decode("utf-8-sig")
+        data = json.loads(data)['channels']
+        index = [d['name'] for d in data].index(channel['title'])
         return ''.join(['/ace/getstream?id=',data[index]['url'],'&.mp4'])

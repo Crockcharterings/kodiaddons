@@ -2,34 +2,37 @@
 # -*- coding: utf-8 -*-
 
 from modules import TVResourceTemplate, research
-from bs4 import BeautifulSoup
-import re, logging
+import re, logging, base64
 logger = logging.getLogger(__name__)
 
 class TVResource(TVResourceTemplate):
     baseurl = 'http://www.alltvonline.ru/api/channels?language_id=2'
     def __init__(self, baseurl=baseurl):
         super(TVResource, self).__init__(baseurl)
-        self.cost = 333
+        self.cost = 9
 
     def _get_channels(self):
         channels = []
-        data = eval(self.get_url(self.baseurl))
+        data = self.get_json(self.baseurl)
         for index, l in enumerate(data['channels']):
             try:
-                channel_title = l['name'].decode('utf8')
-                channel_link = ''.join(['/ace/getstream?id=',l['url'],'&.mp4'])
-                group_title = l['cat'].decode('utf8')
+                title = l['name']
+                link = ''.join([self.urlparse.scheme,'://',self.urlparse.netloc,'/channel/',l['url']])
+                logo = ''.join([self.urlparse.scheme,'://',self.urlparse.netloc,'/data/channels/',l['url']])
                 channels.append(dict(
-                    title=unicode(channel_title),
-                    link=unicode(channel_link),
-                    group=unicode(group_title)
+                    title=unicode(title),
+                    link=unicode(link),
+                    logo=unicode(logo)
                 ))
+                logger.info('get channel %s', link)
             except Exception as e:
                 logger.error('%s:%s - %s', self.baseurl, index, repr(e)[:50])
         return channels
 
     def _get_stream(self, channel):
-        data = eval(self.get_url(self.baseurl))['channels']
-        index = [d['name'].decode('utf8') for d in data].index(channel['title'])
-        return ''.join(['/ace/getstream?id=',data[index]['url'],'&.mp4'])
+        html = self.get_url(channel['link'])
+        stream = research("var m_link = '(.*?)'",html.decode('utf8'))
+        stream = base64.decodestring(stream)
+        if 'tvrec' in stream: return
+        if 'peers' in stream: return
+        return stream

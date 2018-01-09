@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib2, re, cookielib, json, codecs
-from bs4 import BeautifulSoup
+import urllib2, re, cookielib, json
+from BeautifulSoup import BeautifulSoup
 import logging
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,11 @@ class TVResourceTemplate(object):
 
     def get_soup(self, url):
         html = self.get_url(url)
-        soup = BeautifulSoup(html,"lxml")
+        soup = self._get_soup(html)
+        return soup
+
+    def _get_soup(self, html):
+        soup = BeautifulSoup(html)
         return soup
 
     def get_channels(self):
@@ -68,4 +72,4 @@ class TVResourceTemplate(object):
             stream = self._get_stream(channel)
             return stream
         except Exception as e:
-            logger.error(repr(e))
+            logger.error(repr(e)[:100])
