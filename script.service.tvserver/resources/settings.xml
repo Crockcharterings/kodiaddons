@@ -13,17 +13,17 @@
   <category label="Ресурсы">
     <setting id="trashtv.py" type="bool"       label="#1   Trash.tv  (P2P)" default="true"/>
     <setting id="oneliketv.py" type="bool"     label="#2   Onelike.tv (HTTP)" default="true"/>
-    <setting id="torrenttv.py" type="bool"     label="#3   Torrent-tv.ru (P2P)" default="false"/>
-    <setting id="asplaylist.py" type="bool"    label="#4   ASplaylist.net (P2P)" default="false"/>
-    <setting id="oktv.py" type="bool"          label="#5   Ok-tv.org (HTTP)" default="false"/>
-    <setting id="tvtorrent.py" type="bool"     label="#6   TV-torrent.info (P2P)" default="false"/>
-    <setting id="glaz.py" type="bool"          label="#7   Glaz.tv (HTTP)" default="false"/>
-    <setting id="alltvonline.py" type="bool"   label="#9   AlltvOnline.ru (HTTP)" default="false"/>
-    <setting id="allfontv.py" type="bool"      label="#10  Allfon-tv.pro (P2P)" default="false"/>
-    <setting id="onlytv.py" type="bool"        label="#11  Оnly-tv.org (HTTP)" default="false"/>
-    <setting id="tvonly.py" type="bool"        label="#13  TV-only.org (HTTP)" default="false"/>
+    <setting id="torrenttv.py" type="bool"     label="#3   Torrent-tv.ru (P2P)" default="true"/>
+    <setting id="asplaylist.py" type="bool"    label="#4   ASplaylist.net (P2P)" default="true"/>
+    <setting id="oktv.py" type="bool"          label="#5   Ok-tv.org (HTTP)" default="true"/>
+    <setting id="tvtorrent.py" type="bool"     label="#6   TV-torrent.info (P2P)" default="true"/>
+    <setting id="glaz.py" type="bool"          label="#7   Glaz.tv (HTTP)" default="true"/>
+    <setting id="alltvonline.py" type="bool"   label="#9   AlltvOnline.ru (HTTP)" default="true"/>
+    <setting id="allfontv.py" type="bool"      label="#10  Allfon-tv.pro (P2P)" default="true"/>
+    <setting id="onlytv.py" type="bool"        label="#11  Оnly-tv.org (HTTP)" default="true"/>
+    <setting id="tvonly.py" type="bool"        label="#13  TV-only.org (HTTP)" default="true"/>
     <!--<setting id="torrentstream.py" type="bool" label="#14  Torren-Stream.ru (P2P)" default="false"/>-->
-    <setting id="yandex.py" type="bool"        label="#15  Яндекс ТВ (HTTP)" default="false"/>
-    <setting id="fanattv.py" type="bool"       label="#18  Fanat.tv (HTTP)" default="false"/>
+    <setting id="yandex.py" type="bool"        label="#15  Яндекс ТВ (HTTP)" default="true"/>
+    <setting id="fanattv.py" type="bool"       label="#18  Fanat.tv (HTTP)" default="true"/>
   </category>
 </settings>
